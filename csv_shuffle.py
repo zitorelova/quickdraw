@@ -5,7 +5,7 @@ from tqdm import tqdm
 import pandas as pd
 import numpy as np
 
-IMAGES_PER_CLASS = 100000
+IMAGES_PER_CLASS = 50000
 NCSVS = 100
 
 def f2cat(fname: str) -> str:

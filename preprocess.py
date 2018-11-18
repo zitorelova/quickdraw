@@ -6,8 +6,9 @@ import os
 from pathlib import Path
 from doodle_utils import *
 from time import time
+from tqdm import tqdm
 
-NUM_SAMPLES_PER_CLASS = 1000
+NUM_SAMPLES_PER_CLASS = 30000
 NUM_VALIDATION = 50 * 340
 PATH = Path('data')
 
@@ -30,7 +31,7 @@ def create_train_txts_from_df(path):
 
 def create_test_txts_from_df(path):
     df = pd.read_csv(path)
-    for row in df.iterrows():
+    for row in tqdm(df.iterrows()):
         example = {
             'countrycode': row[1].countrycode,
             'drawing': json.loads(row[1].drawing),
@@ -40,11 +41,13 @@ def create_test_txts_from_df(path):
 
 
 start = time()
-for p in Path('').iterdir(): create_train_txts_from_df(p)
+print("Creating train text files from csv")
+for p in tqdm(Path('train_simplified').iterdir()): create_train_txts_from_df(p)
 print(f'Finished train texts in {round(time() - start,2) / 60} minutes')
 
-start = time()
-create_test_txts_from_df('')
-print(f'Finished test texts in {round(time() - start,2) / 60} minutes')
+#start = time()
+#print("creating test text files from csv")
+#create_test_txts_from_df('test_simplified.csv')
+#print(f'Finished test texts in {round(time() - start,2) / 60} minutes')
 
 
