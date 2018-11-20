@@ -61,6 +61,30 @@ def top_3_pred_labels(preds, classes):
         labels.append(' '.join([classes[idx] for idx in top_3[i]]))
     return labels
 
+def softmax_cross_entropy_criterion(logit, truth, is_average=True):
+    loss = F.cross_entropy(logit, truth, reduce=is_average)
+    return loss
+
+
+def metric(logit, truth, is_average=True):
+
+    with torch.no_grad():
+        prob = F.softmax(logit, 1)
+        value, top = prob.topk(3, dim=1, largest=True, sorted=True)
+        correct = top.eq(truth.view(-1, 1).expand_as(top))
+
+        if is_average==True:
+            # top-3 accuracy
+            correct = correct.float().sum(0, keepdim=False)
+            correct = correct/len(truth)
+
+            top = [correct[0], correct[0]+correct[1], correct[0]+correct[1]+correct[2]]
+            precision = correct[0]/1 + correct[1]/2 + correct[2]/3
+            return precision, top
+
+        else:
+            return correct
+
 def create_submission(test_preds, test_dl, name, classes):
     key_ids = [path.stem for path in test_dl.dataset.x.items]
     labels = top_3_pred_labels(test_preds, classes)
