@@ -3,7 +3,6 @@ import pandas as pd
 from pathlib import Path
 from fastai import *
 from fastai.vision import * 
-#from fastai.data_block import ItemList
 import json 
 from doodle_utils import *
 from time import time
@@ -66,25 +65,33 @@ learn = create_cnn(data_bunch, models.resnet34, metrics=[accuracy, map3])
 print(f'Starting training run on {sz} image size')
 start = time()
 learn.opt_fn = optim.SGD
-lr = 6e-4
-#learn.metrics = [map3]
+lr = 1e-2
+
 #learn.crit = softmax_cross_entropy_criterion
 learn.crit = surr_loss
 learn.models_path = './models/'
+
 if use_pretrained:
     learn.load(pretrain_name)
-#learn.fit(lr/10, 3, use_clr=(10,10))
-print("Looking for LR")
-learn.lr_find()
-#learn.fit_one_cycle(1, max_lr=lr)
+
+#learn.fit(1, 3, use_clr=(10,10))
 #
-#learn.save(name)
+# FOR FINDING LR
 #
-#learn.load(name)
-#
-#preds, _ = learn.get_preds(ds_type=DatasetType.Test)
-#
-#create_submission(preds, data_bunch.test_dl, name, classes)
-#
-#print(f'Finished in {round(time() - start, 3) / 60} minutes')
+#print("Looking for LR")
+#learn.lr_find()
+#learn.recorder.plot()
+#plt.savefig('lr_plot.png')
+
+learn.fit_one_cycle(1, max_lr=lr)
+
+learn.save(name)
+
+learn.load(name)
+
+preds, _ = learn.get_preds(ds_type=DatasetType.Test)
+
+create_submission(preds, data_bunch.test_dl, name, classes)
+
+print(f'Finished in {round(time() - start, 3) / 60} minutes')
 
