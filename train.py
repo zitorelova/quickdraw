@@ -7,15 +7,13 @@ from fastai.vision import *
 import json 
 from doodle_utils import *
 from time import time
-from smooth.src import *
-from smooth.src import losses
-from smooth.src.losses.svm import *
+from losses import * 
 
-use_pretrained = True
-pretrain_name = 'resnet34-128-run-1'
+use_pretrained = False
+pretrain_name = ''
 
 run = 1
-sz = 224
+sz = 128
 bs = 256
 PATH = Path('data')
 NUM_VAL = 5 * 340
@@ -27,7 +25,7 @@ def create_func(path):
     tensor = drawing2tensor(drawing)
     return Image(tensor.div_(255))
 
-surr_loss = SmoothTopkSVM(n_classes=NCATS, alpha=1., k=3)
+surr_loss = svm.SmoothTopkSVM(n_classes=NCATS, alpha=1., k=3)
 
 print("Creating dataset")
 
@@ -61,13 +59,13 @@ batch_stats = pd.read_pickle(f'data/batch_stats_{sz}.pkl')
 data_bunch.normalize(batch_stats)
 
 # Define the network 
-name = f'resnet34-{sz}'
+name = f'resnet34-{sz}-run-{run}'
 
 learn = create_cnn(data_bunch, models.resnet34, metrics=[accuracy, map3])
 
 print(f'Starting training run on {sz} image size')
 start = time()
-learn.opt_fn = optim.Adam
+learn.opt_fn = optim.SGD
 lr = 6e-4
 #learn.metrics = [map3]
 #learn.crit = softmax_cross_entropy_criterion
@@ -76,15 +74,17 @@ learn.models_path = './models/'
 if use_pretrained:
     learn.load(pretrain_name)
 #learn.fit(lr/10, 3, use_clr=(10,10))
-learn.fit_one_cycle(4, max_lr=lr)
-
-learn.save(f'{name}-sz-{sz}-bs-{bs}-run-{run}')
-
-learn.load(f'{name}-sz-{sz}-bs-{bs}-run-{run}')
-
-preds, _ = learn.get_preds(ds_type=DatasetType.Test)
-
-create_submission(preds, data_bunch.test_dl, name, classes)
-
-print(f'Finished in {round(time() - start, 3) / 60} minutes')
+print("Looking for LR")
+learn.lr_find()
+#learn.fit_one_cycle(1, max_lr=lr)
+#
+#learn.save(name)
+#
+#learn.load(name)
+#
+#preds, _ = learn.get_preds(ds_type=DatasetType.Test)
+#
+#create_submission(preds, data_bunch.test_dl, name, classes)
+#
+#print(f'Finished in {round(time() - start, 3) / 60} minutes')
 
