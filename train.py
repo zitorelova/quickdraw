@@ -11,9 +11,9 @@ from losses import *
 use_pretrained = True   
 pretrain_name = 'resnet34-128-run-1'
 
-run = 2
+run = 3
 sz = 128
-bs = 512
+bs = 768
 PATH = Path('data')
 NUM_VAL = 5 * 340
 NCATS = 340
@@ -47,8 +47,8 @@ test_items = ItemList.from_folder(PATH/'test/', create_func=create_func)
 label_lists.add_test(test_items)
 
 train_dl = DataLoader(label_lists.train, bs, True, num_workers=8)
-valid_dl = DataLoader(label_lists.valid, 2*bs, False, num_workers=8)
-test_dl = DataLoader(label_lists.test, 2*bs, False, num_workers=8)
+valid_dl = DataLoader(label_lists.valid, bs, False, num_workers=8)
+test_dl = DataLoader(label_lists.test, bs, False, num_workers=8)
 
 data_bunch = ImageDataBunch(train_dl, valid_dl, test_dl)
 
@@ -64,9 +64,9 @@ learn = create_cnn(data_bunch, models.resnet34, metrics=[accuracy, map3])
 
 print(f'Starting training run on {sz} image size')
 start = time()
-learn.opt_fn = optim.SGD
+learn.opt_fn = optim.Adam
 lr = 5e-3
-
+lr_arr = np.array([lr/100, lr/10, lr])
 #learn.crit = softmax_cross_entropy_criterion
 learn.crit = surr_loss
 learn.models_path = './models/'
@@ -84,9 +84,9 @@ if use_pretrained:
 #plt.savefig('lr_plot.png')
 
 learn.freeze_to(1)
-learn.fit_one_cycle(3, lr, div_factor=100, pct_start=0.3)
+learn.fit_one_cycle(1, lr, div_factor=100, pct_start=0.3)
 learn.unfreeze()
-learn.fit_one_cycle(15, [lr/64, lr/8, lr], div_factor=25, pct_start=0.3)
+learn.fit_one_cycle(3, lr_arr, div_factor=25, pct_start=0.3, best_save_name=name)
 
 learn.save(name)
 
