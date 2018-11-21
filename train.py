@@ -8,12 +8,12 @@ from doodle_utils import *
 from time import time
 from losses import * 
 
-use_pretrained = False
-pretrain_name = ''
+use_pretrained = True   
+pretrain_name = 'resnet34-128-run-1'
 
-run = 1
+run = 2
 sz = 128
-bs = 256
+bs = 512
 PATH = Path('data')
 NUM_VAL = 5 * 340
 NCATS = 340
@@ -65,7 +65,7 @@ learn = create_cnn(data_bunch, models.resnet34, metrics=[accuracy, map3])
 print(f'Starting training run on {sz} image size')
 start = time()
 learn.opt_fn = optim.SGD
-lr = 1e-2
+lr = 5e-3
 
 #learn.crit = softmax_cross_entropy_criterion
 learn.crit = surr_loss
@@ -83,7 +83,10 @@ if use_pretrained:
 #learn.recorder.plot()
 #plt.savefig('lr_plot.png')
 
-learn.fit_one_cycle(1, max_lr=lr)
+learn.freeze_to(1)
+learn.fit_one_cycle(3, lr, div_factor=100, pct_start=0.3)
+learn.unfreeze()
+learn.fit_one_cycle(15, [lr/64, lr/8, lr], div_factor=25, pct_start=0.3)
 
 learn.save(name)
 
