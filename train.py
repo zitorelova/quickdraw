@@ -1,3 +1,5 @@
+#import matplotlib
+#matplotlib.use('agg')
 import numpy as np  
 import pandas as pd  
 from pathlib import Path
@@ -7,14 +9,15 @@ import json
 from doodle_utils import *
 from time import time
 from losses import * 
+from tqdm import tqdm
 #from callbacks import *
 
-use_pretrained = True   
+use_pretrained = False
 pretrain_name = 'resnet34-128-run-1'
 
-run = 3
+run = 1
 sz = 128
-bs = 768
+bs = 256
 PATH = Path('data')
 NUM_VAL = 50 * 340
 NCATS = 340
@@ -27,7 +30,7 @@ def create_func(path):
 
 surr_loss = svm.SmoothTopkSVM(n_classes=NCATS, alpha=1., k=3)
 
-print("Creating dataset")
+print("Creating item list")
 
 item_list = ItemList.from_folder(PATH/'train/', create_func=create_func)
 
@@ -47,6 +50,7 @@ label_lists = item_lists.label_from_folder(classes=classes)
 test_items = ItemList.from_folder(PATH/'test/', create_func=create_func)
 label_lists.add_test(test_items)
 
+print("Creating data loaders")
 train_dl = DataLoader(label_lists.train, bs, True, num_workers=8)
 valid_dl = DataLoader(label_lists.valid, bs, False, num_workers=8)
 test_dl = DataLoader(label_lists.test, bs, False, num_workers=8)
@@ -54,18 +58,18 @@ test_dl = DataLoader(label_lists.test, bs, False, num_workers=8)
 data_bunch = ImageDataBunch(train_dl, valid_dl, test_dl)
 
 
-#pd.to_pickle(data_bunch.batch_stats(), f'data/batch_stats_{sz}.pkl')
+pd.to_pickle(data_bunch.batch_stats(), f'data/batch_stats_{sz}.pkl')
 batch_stats = pd.read_pickle(f'data/batch_stats_{sz}.pkl')
 data_bunch.normalize(batch_stats)
 
 # Define the network 
-name = f'resnet34-{sz}-run-{run}'
+name = f'resnet50-{sz}-run-{run}'
 
-learn = create_cnn(data_bunch, models.resnet34, metrics=[accuracy, map3])
+learn = create_cnn(data_bunch, models.resnet50, metrics=[accuracy, map3])
 
 print(f'Starting training run on {sz} image size')
 start = time()
-learn.opt_fn = optim.Adam
+learn.opt_fn = optim.SGD
 lr = 5e-3
 lr_arr = np.array([lr/100, lr/10, lr])
 #learn.crit = softmax_cross_entropy_criterion
@@ -80,17 +84,17 @@ if use_pretrained:
 #learn.fit(1, 3, use_clr=(10,10))
 #
 # FOR FINDING LR
-#
+
 #print("Looking for LR")
 #learn.lr_find()
 #learn.recorder.plot()
 #plt.savefig('lr_plot.png')
 
 learn.freeze_to(1)
-learn.fit_one_cycle(1, lr, div_factor=100, pct_start=0.3)
+learn.fit_one_cycle(2, lr, div_factor=100, pct_start=0.3)
 learn.save(name)
 learn.unfreeze()
-learn.fit_one_cycle(6, lr_arr, div_factor=25, pct_start=0.3)
+learn.fit_one_cycle(5, lr_arr, div_factor=25, pct_start=0.3)
 
 learn.save(name)
 
