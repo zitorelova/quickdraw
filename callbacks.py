@@ -1,6 +1,8 @@
 from fastai import *
 
-class SaveBestModel(LossRecorder):
+# Checkpoint
+
+class SaveBestModel(Callback):
     def __init__(self, model, lr, name='best_model'):
         super().__init__(model.get_layer_opt(lr, None))
         self.name = name
@@ -18,3 +20,5 @@ class SaveBestModel(LossRecorder):
         elif acc == self.best_acc and  loss < self.best_loss:
             self.best_loss = loss
             self.model.save(f'{self.name}')
+
+
