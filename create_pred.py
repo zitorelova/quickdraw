@@ -8,7 +8,7 @@ from doodle_utils import *
 from time import time
 from losses import * 
 
-model_name = ''
+name = 'resnet50-128-run-1'
 
 sz = 128
 bs = 256
@@ -55,8 +55,9 @@ batch_stats = pd.read_pickle(f'data/batch_stats_{sz}.pkl')
 data_bunch.normalize(batch_stats)
 
 learn = create_cnn(data_bunch, models.resnet50, metrics=[accuracy, map3])
-learn.load(model_name)
+learn.load(name)
 
+print("Making predictions on test set")
 preds, _ = learn.get_preds(ds_type=DatasetType.Test)
 create_submission(preds, data_bunch.test_dl, name, classes)
 print(f'Finished in {round(time() - start, 3) / 60} minutes')

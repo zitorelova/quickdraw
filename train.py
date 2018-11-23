@@ -12,12 +12,12 @@ from losses import *
 from tqdm import tqdm
 #from callbacks import *
 
-use_pretrained = False
-pretrain_name = 'resnet34-128-run-1'
+use_pretrained = True
+pretrain_name = 'resnet50-128-run-1'
 
-run = 1
+run = 2
 sz = 128
-bs = 256
+bs = 300
 PATH = Path('data')
 NUM_VAL = 50 * 340
 NCATS = 340
@@ -70,7 +70,7 @@ learn = create_cnn(data_bunch, models.resnet50, metrics=[accuracy, map3])
 print(f'Starting training run on {sz} image size')
 start = time()
 learn.opt_fn = optim.SGD
-lr = 5e-3
+lr = 2e-3
 lr_arr = np.array([lr/100, lr/10, lr])
 #learn.crit = softmax_cross_entropy_criterion
 learn.crit = surr_loss
@@ -90,11 +90,11 @@ if use_pretrained:
 #learn.recorder.plot()
 #plt.savefig('lr_plot.png')
 
-learn.freeze_to(1)
-learn.fit_one_cycle(2, lr, div_factor=100, pct_start=0.3)
-learn.save(name)
+#learn.freeze_to(1)
+#learn.fit_one_cycle(2, lr, div_factor=100, pct_start=0.3)
+#learn.save(name)
 learn.unfreeze()
-learn.fit_one_cycle(5, lr_arr, div_factor=25, pct_start=0.3)
+learn.fit_one_cycle(2, lr_arr, div_factor=25, pct_start=0.3)
 
 learn.save(name)
 
