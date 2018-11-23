@@ -1,5 +1,5 @@
-#import matplotlib
-#matplotlib.use('agg')
+import matplotlib
+matplotlib.use('agg')
 import numpy as np  
 import pandas as pd  
 from pathlib import Path
@@ -12,12 +12,12 @@ from losses import *
 from tqdm import tqdm
 #from callbacks import *
 
-use_pretrained = True
+use_pretrained = False
 pretrain_name = 'resnet50-128-run-1'
 
-run = 2
+run = 1
 sz = 128
-bs = 300
+bs = 256
 PATH = Path('data')
 NUM_VAL = 50 * 340
 NCATS = 340
@@ -63,14 +63,14 @@ batch_stats = pd.read_pickle(f'data/batch_stats_{sz}.pkl')
 data_bunch.normalize(batch_stats)
 
 # Define the network 
-name = f'resnet50-{sz}-run-{run}'
+name = f'resnet101-{sz}-run-{run}'
 
-learn = create_cnn(data_bunch, models.resnet50, metrics=[accuracy, map3])
+learn = create_cnn(data_bunch, models.resnet101, metrics=[accuracy, map3])
 
 print(f'Starting training run on {sz} image size')
 start = time()
 learn.opt_fn = optim.SGD
-lr = 2e-3
+lr = 8e-3
 lr_arr = np.array([lr/100, lr/10, lr])
 #learn.crit = softmax_cross_entropy_criterion
 learn.crit = surr_loss
@@ -85,24 +85,24 @@ if use_pretrained:
 #
 # FOR FINDING LR
 
-#print("Looking for LR")
-#learn.lr_find()
-#learn.recorder.plot()
-#plt.savefig('lr_plot.png')
+print("Looking for LR")
+learn.lr_find()
+learn.recorder.plot()
+plt.savefig('lr_plot.png')
 
 #learn.freeze_to(1)
 #learn.fit_one_cycle(2, lr, div_factor=100, pct_start=0.3)
 #learn.save(name)
-learn.unfreeze()
-learn.fit_one_cycle(2, lr_arr, div_factor=25, pct_start=0.3)
-
-learn.save(name)
-
-learn.load(name)
-
-preds, _ = learn.get_preds(ds_type=DatasetType.Test)
-
-create_submission(preds, data_bunch.test_dl, name, classes)
+#learn.unfreeze()
+#learn.fit_one_cycle(2, lr_arr, div_factor=25, pct_start=0.3)
+#
+#learn.save(name)
+#
+#learn.load(name)
+#
+#preds, _ = learn.get_preds(ds_type=DatasetType.Test)
+#
+#create_submission(preds, data_bunch.test_dl, name, classes)
 
 print(f'Finished in {round(time() - start, 3) / 60} minutes')
 
