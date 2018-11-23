@@ -7,6 +7,7 @@ import json
 from doodle_utils import *
 from time import time
 from losses import * 
+from callbacks import *
 
 use_pretrained = True   
 pretrain_name = 'resnet34-128-run-1'
@@ -74,6 +75,8 @@ learn.models_path = './models/'
 if use_pretrained:
     learn.load(pretrain_name)
 
+best_name = name + 'best'
+mod_checkpoint = SaveBestModel(model=learn, lr=lr, name=best_name)
 #learn.fit(1, 3, use_clr=(10,10))
 #
 # FOR FINDING LR
@@ -84,9 +87,9 @@ if use_pretrained:
 #plt.savefig('lr_plot.png')
 
 learn.freeze_to(1)
-learn.fit_one_cycle(1, lr, div_factor=100, pct_start=0.3)
+learn.fit_one_cycle(1, lr, div_factor=100, pct_start=0.3, callbacks=[mod_checkpoint])
 learn.unfreeze()
-learn.fit_one_cycle(3, lr_arr, div_factor=25, pct_start=0.3, best_save_name=name)
+learn.fit_one_cycle(3, lr_arr, div_factor=25, pct_start=0.3, callbacks=[mod_checkpoint])
 
 learn.save(name)
 
