@@ -19,7 +19,7 @@ pretrain_name = 'resnet50-128-run-1'
 
 run = 1
 sz = 128
-bs = 256
+bs = 1024
 PATH = Path('data')
 NUM_VAL = 50 * 340
 NCATS = 340
@@ -65,10 +65,7 @@ batch_stats = pd.read_pickle(f'data/batch_stats_{sz}.pkl')
 data_bunch.normalize(batch_stats)
 
 # Define the network 
-name = f'seresnext50-{sz}-run-{run}'
-
-model_name = 'se_resnext50_32x4d'
-mod = pretrainedmodels.__dict__[model_name](num_classes=1000, pretrained='imagenet')
+name = f'resnet18-{sz}-run-{run}'
 
 learn = create_cnn(data_bunch, mod, metrics=[accuracy, map3])
 
