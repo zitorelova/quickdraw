@@ -8,16 +8,18 @@ from doodle_utils import *
 from time import time
 from tqdm import tqdm
 
-NUM_SAMPLES_PER_CLASS = 30000
-NUM_VALIDATION = 50 * 340
+NUM_SAMPLES_PER_CLASS = 23000
+# NUM_VALIDATION = 50 * 340
 PATH = Path('data')
 
 PATH.mkdir(exist_ok=True)
 (PATH/'train').mkdir(exist_ok=True)
 (PATH/'test').mkdir(exist_ok=True)
 
-def create_train_txts_from_df(path):
+def create_train_txts_from_df(path, recog=True):
     df = pd.read_csv(path)
+    if recog:
+    	   df = df[df['recognized'] == True]
     klass = '_'.join(path.stem.split())
     (PATH/'train'/klass).mkdir(exist_ok=True)
     for row in df.sample(NUM_SAMPLES_PER_CLASS).iterrows():
