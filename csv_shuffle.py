@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 IMAGES_PER_CLASS = 50000
-NCSVS = 100
+NCSVS = 200
 
 def f2cat(fname: str) -> str:
     return fname.split('.')[0]
@@ -19,9 +19,11 @@ class Simplified():
         files = os.listdir(os.path.join(self.input_path, 'train_simplified'))
         return sorted([f2cat(f) for f in files], key=str.lower)
     
-    def read_training_csv(self, category, nrows=None, usecols=None, drawing_transform=False):
+    def read_training_csv(self, category, nrows=None, usecols=None, drawing_transform=False, recognized=True):
         df = pd.read_csv(os.path.join(self.input_path, 'train_simplified', category + '.csv'),
                          nrows=nrows, parse_dates=['timestamp'], usecols=usecols)
+        if recognized:
+            df = df[df['recognized'] == True]
         if drawing_transform:
             df['drawing'] = df['drawing'].apply(json.loads)
         return df
