@@ -11,6 +11,8 @@ from time import time
 from losses import * 
 from tqdm import tqdm
 #from callbacks import *
+import pretrainedmodels
+
 
 use_pretrained = False
 pretrain_name = 'resnet50-128-run-1'
@@ -40,8 +42,8 @@ val_idxs = idxs[:NUM_VAL]
 
 item_lists = item_list.split_by_idx(val_idxs)
 
-#label_lists = item_lists.label_from_folder()
-#pd.to_pickle(label_lists.train.y.classes, 'data/classes.pkl')
+label_lists = item_lists.label_from_folder()
+pd.to_pickle(label_lists.train.y.classes, 'data/classes.pkl')
 
 classes = pd.read_pickle('data/classes.pkl')
 
@@ -63,15 +65,18 @@ batch_stats = pd.read_pickle(f'data/batch_stats_{sz}.pkl')
 data_bunch.normalize(batch_stats)
 
 # Define the network 
-name = f'resnet101-{sz}-run-{run}'
+name = f'seresnext50-{sz}-run-{run}'
 
-learn = create_cnn(data_bunch, models.resnet101, metrics=[accuracy, map3])
+model_name = 'se_resnext50_32x4d'
+mod = pretrainedmodels.__dict__[model_name](num_classes=1000, pretrained='imagenet')
+
+learn = create_cnn(data_bunch, mod, metrics=[accuracy, map3])
 
 print(f'Starting training run on {sz} image size')
 start = time()
-learn.opt_fn = optim.SGD
-lr = 8e-3
-lr_arr = np.array([lr/100, lr/10, lr])
+learn.opt_fn = optim.Adam
+#lr = 8e-3
+#lr_arr = np.array([lr/100, lr/10, lr])
 #learn.crit = softmax_cross_entropy_criterion
 learn.crit = surr_loss
 learn.models_path = './models/'
