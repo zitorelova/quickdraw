@@ -1,8 +1,30 @@
+from tensorflow.keras.metrics import top_k_categorical_accuracy
+import json
+import numpy as np 
+import pandas as pd
+import cv2
+import os
+from tensorflow.keras.applications.mobilenet import preprocess_input
+from tensorflow import keras
+import tensorflow as tf
+import warnings
+warnings.filterwarnings('ignore')
+
+BASE_SIZE = 256
+DP_DIR = 'shuffled_csv/'
+STEPS = 1000
+NCATS = 340
+NCSVS = 200
+np.random.seed(seed=1987)
+tf.set_random_seed(seed=1987)
+size = 128
+batchsize = 512
+
 def f2cat(filename: str) -> str:
     return filename.split('.')[0]
 
 def list_all_categories():
-    files = os.listdir(os.path.join(INPUT_DIR, 'train_simplified'))
+    files = os.listdir('train_simplified')
     return sorted([f2cat(f) for f in files], key=str.lower)
 
 def apk(actual, predicted, k=3):
@@ -54,7 +76,7 @@ def image_generator_xd(size, batchsize, ks, lw=6, time_color=True):
         for k in np.random.permutation(ks):
             filename = os.path.join(DP_DIR, 'train_k{}.csv.gz'.format(k))
             for df in pd.read_csv(filename, chunksize=batchsize):
-                df['drawing'] = df['drawing'].apply(ast.literal_eval)
+                df['drawing'] = df['drawing'].apply(json.loads)
                 x = np.zeros((len(df), size, size, 1))
                 for i, raw_strokes in enumerate(df.drawing.values):
                     x[i, :, :, 0] = draw_cv2(raw_strokes, size=size, lw=lw,
@@ -64,7 +86,7 @@ def image_generator_xd(size, batchsize, ks, lw=6, time_color=True):
                 yield x, y
 
 def df_to_image_array_xd(df, size, lw=6, time_color=True):
-    df['drawing'] = df['drawing'].apply(ast.literal_eval)
+    df['drawing'] = df['drawing'].apply(json.loads)
     x = np.zeros((len(df), size, size, 1))
     for i, raw_strokes in enumerate(df.drawing.values):
         x[i, :, :, 0] = draw_cv2(raw_strokes, size=size, lw=lw, time_color=time_color)

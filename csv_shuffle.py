@@ -4,7 +4,7 @@ import datetime as dt
 from tqdm import tqdm
 import pandas as pd
 import numpy as np
-
+from tensorflow_functions import *
 IMAGES_PER_CLASS = 50000
 NCSVS = 200
 
@@ -56,4 +56,4 @@ for k in tqdm(range(NCSVS)):
         os.remove(fname)
 
 end = dt.datetime.now()
-print('Ran on {}.\nTotal time {}m'.format(end, (end - start).minutes))
+print('Ran on {}.\nTotal time {}m'.format(end, (end - start)))
