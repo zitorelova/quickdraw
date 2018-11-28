@@ -19,9 +19,10 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras import backend as K
 from tensorflow.keras.layers import BatchNormalization, Conv1D, LSTM, Dense, Dropout, Bidirectional
 from tensorflow.keras.layers import CuDNNLSTM as LSTM # this one is about 3x faster on GPU instances
+from clr import OneCycleLR
 start = dt.datetime.now()
 
-DP_DIR = 'shuffled-csv'
+DP_DIR = 'shuffled_csv'
 INPUT_DIR = './'
 BASE_SIZE = 256
 NCSVS = 200
@@ -32,11 +33,11 @@ tf.set_random_seed(seed=1987)
 # Hyperparams
 
 STEPS = 1000
-EPOCHS = 12
-SIZE = 128
-BATCHSIZE = 128
+EPOCHS = 50
+SIZE = 96
+BATCHSIZE = 256
 
-def f2cat(filename: str) -> str:
+def f2cat(filename):
     return filename.split('.')[0]
 
 def list_all_categories():
@@ -110,7 +111,7 @@ x = concatenate([y, y2])
 x = Dropout(0.3)(x)
 x = Dense(NCATS, activation='softmax')(x)
 model = Model(inputs=[cnn_in, lstm_in], outputs=x)
-
+model.load_weights('lstm_xception.h5')
 model.compile(optimizer=Adam(lr=0.003), loss='categorical_crossentropy',
              metrics=[categorical_crossentropy, categorical_accuracy, top_3_accuracy])
 
@@ -179,7 +180,7 @@ val_datagen = image_generator_xd(size=SIZE, batchsize=BATCHSIZE, ks=range(NCSVS 
 callbacks = [
     ReduceLROnPlateau(monitor='val_categorical_accuracy', factor=0.5, patience=3,
                       min_delta=0.00005, mode='max', cooldown=3, verbose=1),
-    ModelCheckpoint("lstm_xception.h5",monitor='val_top_3_accuracy', 
+    ModelCheckpoint("./models/lstm_xception_run1.h5",monitor='val_top_3_accuracy', 
                                    mode = 'max', save_best_only=True, verbose=1)
 ]
 
@@ -192,11 +193,12 @@ hist = model.fit_generator(
 hists.append(hist)
 
 # Validation
+print("Running validation")
 
 df = pd.read_csv(os.path.join(DP_DIR, 'train_k{}.csv.gz'.format(NCSVS - 1)), nrows=34000)
 for i in range(10):
     valid_df = df.loc[i*3400:(i+1)*3400,:].copy()
-    x_valid, x2 = df_to_image_array_xd(valid_df, size)
+    x_valid, x2 = df_to_image_array_xd(valid_df, SIZE)
     y_valid = keras.utils.to_categorical(valid_df.y, num_classes=NCATS)
     print(x_valid.shape, y_valid.shape)
     print('Validation array memory {:.2f} GB'.format(x_valid.nbytes / 1024.**3 ))
@@ -205,12 +207,14 @@ for i in range(10):
 
     print('Map3: {:.3f}'.format(map3))
 
-t = pd.read_csv(os.path.join(INPUT_DIR, 'test_simplified.csv'))
+print("Making final predictions on the test set")
+
+test = pd.read_csv(os.path.join(INPUT_DIR, 'test_simplified.csv'))
 
 for i in range(10):
     end = min((i+1)*11220, 112199)
     subtest= test.iloc[i*11220:end].copy().reset_index(drop=True)
-    x_test = df_to_image_array_xd(subtest, size)
+    x_test = df_to_image_array_xd(subtest, SIZE)
 
     test_predictions = model.predict(x_test, batch_size=128, verbose=1)
 
@@ -226,6 +230,6 @@ for i in range(10):
         submission = submission.append(subtest[['key_id', 'word']], ignore_index=True)
 
 submission.to_csv('./subs/lstm_xception.csv', index=False)
-print('Finished on {dt.datetime.now() - start}')
+print('Finished in {} minutes'.format((dt.datetime.now() - start).seconds / 60))
 
 
