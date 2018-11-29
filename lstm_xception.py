@@ -8,7 +8,7 @@ import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Input, concatenate
 from tensorflow.keras.layers import Dense, Dropout, Flatten, Activation,GlobalAveragePooling2D
-from tensorflow.keras.metrics import categorical_accuracy, top_k_categorical_accuracy, categorical_crossentropy, average_precision_at_k
+from tensorflow.keras.metrics import categorical_accuracy, top_k_categorical_accuracy, categorical_crossentropy
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.optimizers import Adam, SGD
@@ -19,6 +19,7 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras import backend as K
 from tensorflow.keras.layers import BatchNormalization, Conv1D, LSTM, Dense, Dropout, Bidirectional
 from tensorflow.keras.layers import CuDNNLSTM as LSTM # this one is about 3x faster on GPU instances
+from tensorflow.metrics import average_precision_at_k
 from clr import OneCycleLR
 start = dt.datetime.now()
 
@@ -72,8 +73,24 @@ def preds2catids(predictions):
 def top_3_accuracy(y_true, y_pred):
     return top_k_categorical_accuracy(y_true, y_pred, k=4)
 
-def mean_average_precision_3(y_true, y_pred):
-    return tf.reduce_mean(average_precision_at_k(tf.cast(y_true, tf.int64), y_pred, 3)[0])
+def as_keras_metric(method):
+    import functools
+    from tensorflow.keras import backend as K
+    import tensorflow as tf
+    @functools.wraps(method)
+    def wrapper(self, args, **kwargs):
+        """ Wrapper for turning tensorflow metrics into keras metrics """
+        value, update_op = method(self, args, **kwargs)
+        K.get_session().run(tf.local_variables_initializer())
+        with tf.control_dependencies([update_op]):
+            value = tf.identity(value)
+        return value
+    return wrapper 
+
+@as_keras_metric
+def mean_ap_3(y_pred, y_true):
+    return average_precision_at_k(y_true, y_pred, k=3)
+
 
 # Xception
 cnn_module = Xception(input_shape=(SIZE, SIZE, 3), weights='imagenet', include_top=False)
@@ -116,7 +133,7 @@ x = Dense(NCATS, activation='softmax')(x)
 model = Model(inputs=[cnn_in, lstm_in], outputs=x)
 model.load_weights('./models/lstm_xception_run1.h5')
 model.compile(optimizer=SGD(lr=0.0008), loss='categorical_crossentropy',
-             metrics=[categorical_crossentropy, categorical_accuracy, top_3_accuracy, mean_average_precision_3])
+             metrics=[categorical_crossentropy, categorical_accuracy, top_3_accuracy, mean_ap_3])
 
 def _stack_it(raw_strokes):
     """preprocess the string and make 
