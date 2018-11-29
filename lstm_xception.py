@@ -89,7 +89,7 @@ def as_keras_metric(method):
 
 @as_keras_metric
 def mean_ap_3(y_pred, y_true):
-    return average_precision_at_k(y_true, y_pred, k=3)
+    return average_precision_at_k(tf.cast(y_true, tf.int64),  y_pred, k=3)
 
 
 # Xception
@@ -198,10 +198,10 @@ train_datagen = image_generator_xd(size=SIZE, batchsize=BATCHSIZE, ks=range(NCSV
 val_datagen = image_generator_xd(size=SIZE, batchsize=BATCHSIZE, ks=range(NCSVS - 1, NCSVS))
 
 callbacks = [
-    OneCycleLR(num_samples=BATCH_SIZE*STEPS, batch_size=BATCH_SIZE, max_lr=0.0008, end_percentage=0.125, minimum_momentum=0.6),
+    OneCycleLR(num_samples=BATCHSIZE*STEPS, num_epochs=10, batch_size=BATCHSIZE, max_lr=0.0008, end_percentage=0.125, minimum_momentum=0.6),
 #    ReduceLROnPlateau(monitor='val_categorical_accuracy', factor=0.5, patience=3,
 #                      min_delta=0.00005, mode='max', cooldown=3, verbose=1),
-    ModelCheckpoint("./models/lstm_xception_run2.h5",monitor='val_top_3_accuracy', 
+    ModelCheckpoint("./models/lstm_xception_run2.h5",monitor='val_mean_ap_3', 
                                    mode = 'max', save_best_only=True, verbose=1)
 ]
 
