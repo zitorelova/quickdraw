@@ -8,10 +8,10 @@ import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Input, concatenate
 from tensorflow.keras.layers import Dense, Dropout, Flatten, Activation,GlobalAveragePooling2D
-from tensorflow.keras.metrics import categorical_accuracy, top_k_categorical_accuracy, categorical_crossentropy
+from tensorflow.keras.metrics import categorical_accuracy, top_k_categorical_accuracy, categorical_crossentropy, average_precision_at_k
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam, SGD
 from tensorflow.keras.applications import Xception
 from tensorflow.keras.applications.xception import preprocess_input
 from ast import literal_eval
@@ -33,7 +33,7 @@ tf.set_random_seed(seed=1987)
 # Hyperparams
 
 STEPS = 1000
-EPOCHS = 50
+EPOCHS = 10
 SIZE = 96
 BATCHSIZE = 256
 
@@ -71,6 +71,9 @@ def preds2catids(predictions):
 
 def top_3_accuracy(y_true, y_pred):
     return top_k_categorical_accuracy(y_true, y_pred, k=4)
+
+def mean_average_precision_3(y_true, y_pred):
+    return tf.reduce_mean(average_precision_at_k(tf.cast(y_true, tf.int64), y_pred, 3)[0])
 
 # Xception
 cnn_module = Xception(input_shape=(SIZE, SIZE, 3), weights='imagenet', include_top=False)
@@ -111,9 +114,9 @@ x = concatenate([y, y2])
 x = Dropout(0.3)(x)
 x = Dense(NCATS, activation='softmax')(x)
 model = Model(inputs=[cnn_in, lstm_in], outputs=x)
-model.load_weights('lstm_xception.h5')
-model.compile(optimizer=Adam(lr=0.003), loss='categorical_crossentropy',
-             metrics=[categorical_crossentropy, categorical_accuracy, top_3_accuracy])
+model.load_weights('./models/lstm_xception_run1.h5')
+model.compile(optimizer=SGD(lr=0.0008), loss='categorical_crossentropy',
+             metrics=[categorical_crossentropy, categorical_accuracy, top_3_accuracy, mean_average_precision_3])
 
 def _stack_it(raw_strokes):
     """preprocess the string and make 
@@ -178,16 +181,17 @@ train_datagen = image_generator_xd(size=SIZE, batchsize=BATCHSIZE, ks=range(NCSV
 val_datagen = image_generator_xd(size=SIZE, batchsize=BATCHSIZE, ks=range(NCSVS - 1, NCSVS))
 
 callbacks = [
-    ReduceLROnPlateau(monitor='val_categorical_accuracy', factor=0.5, patience=3,
-                      min_delta=0.00005, mode='max', cooldown=3, verbose=1),
-    ModelCheckpoint("./models/lstm_xception_run1.h5",monitor='val_top_3_accuracy', 
+    OneCycleLR(num_samples=BATCH_SIZE*STEPS, batch_size=BATCH_SIZE, max_lr=0.0008, end_percentage=0.125, minimum_momentum=0.6),
+#    ReduceLROnPlateau(monitor='val_categorical_accuracy', factor=0.5, patience=3,
+#                      min_delta=0.00005, mode='max', cooldown=3, verbose=1),
+    ModelCheckpoint("./models/lstm_xception_run2.h5",monitor='val_top_3_accuracy', 
                                    mode = 'max', save_best_only=True, verbose=1)
 ]
 
 hists = []
 hist = model.fit_generator(
     train_datagen, steps_per_epoch=STEPS, epochs=EPOCHS, verbose=1,
-    validation_data=val_datagen, validation_steps = 200,
+    validation_data=val_datagen, validation_steps = 300,
     callbacks = callbacks
 )
 hists.append(hist)
@@ -229,7 +233,7 @@ for i in range(10):
     else: 
         submission = submission.append(subtest[['key_id', 'word']], ignore_index=True)
 
-submission.to_csv('./subs/lstm_xception.csv', index=False)
+submission.to_csv('./subs/lstm_xception_2.csv', index=False)
 print('Finished in {} minutes'.format((dt.datetime.now() - start).seconds / 60))
 
 
