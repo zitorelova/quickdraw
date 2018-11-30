@@ -26,15 +26,15 @@ start = dt.datetime.now()
 DP_DIR = 'shuffled_csv'
 INPUT_DIR = './'
 BASE_SIZE = 256
-NCSVS = 200
+NCSVS = 100
 NCATS = 340
-np.random.seed(seed=1987)
-tf.set_random_seed(seed=1987)
+np.random.seed(seed=42)
+tf.set_random_seed(seed=42)
 
 # Hyperparams
-
-STEPS = 1000
-EPOCHS = 15
+NUM_SAMPLES = 49707579
+STEPS = NUM_SAMPLES / EPOCHS // BATCHSIZE
+EPOCHS = 100
 SIZE = 96
 BATCHSIZE = 280
 
@@ -131,8 +131,8 @@ x = concatenate([y, y2])
 x = Dropout(0.3)(x)
 x = Dense(NCATS, activation='softmax')(x)
 model = Model(inputs=[cnn_in, lstm_in], outputs=x)
-model.load_weights('./models/lstm_xception_run1.h5')
-model.compile(optimizer=SGD(lr=0.0008), loss='categorical_crossentropy',
+model.load_weights('./models/lstm_xception_run2.h5')
+model.compile(optimizer=Adam(lr=0.008), loss='categorical_crossentropy',
              metrics=[categorical_crossentropy, categorical_accuracy, top_3_accuracy])
 
 def _stack_it(raw_strokes):
@@ -198,10 +198,10 @@ train_datagen = image_generator_xd(size=SIZE, batchsize=BATCHSIZE, ks=range(NCSV
 val_datagen = image_generator_xd(size=SIZE, batchsize=BATCHSIZE, ks=range(NCSVS - 2, NCSVS))
 
 callbacks = [
-    OneCycleLR(num_samples=BATCHSIZE*STEPS, num_epochs=EPOCHS, batch_size=BATCHSIZE, max_lr=0.0008, end_percentage=0.125, minimum_momentum=0.6),
-#    ReduceLROnPlateau(monitor='val_categorical_accuracy', factor=0.5, patience=3,
-#                      min_delta=0.00005, mode='max', cooldown=3, verbose=1),
-    ModelCheckpoint("./models/lstm_xception_run2.h5",monitor='val_top_3_accuracy', 
+#    OneCycleLR(num_samples=BATCHSIZE*STEPS, num_epochs=EPOCHS, batch_size=BATCHSIZE, max_lr=0.0008, end_percentage=0.125, minimum_momentum=0.6),
+    ReduceLROnPlateau(monitor='val_categorical_accuracy', factor=0.5, patience=3,
+                      min_delta=0.00008, mode='max', cooldown=3, verbose=1),
+    ModelCheckpoint("./models/lstm_xception_full1.h5",monitor='val_top_3_accuracy', 
                                    mode = 'max', save_best_only=True, verbose=1)
 ]
 
@@ -254,7 +254,7 @@ for i in range(10):
     else: 
         submission = submission.append(subtest[['key_id', 'word']], ignore_index=True)
 
-submission.to_csv('./subs/lstm_xception_2.csv', index=False)
+submission.to_csv('./subs/lstm_xception_full1.csv', index=False)
 print('Finished in {} minutes'.format((dt.datetime.now() - start).seconds / 60))
 
 

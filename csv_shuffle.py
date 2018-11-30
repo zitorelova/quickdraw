@@ -5,10 +5,10 @@ from tqdm import tqdm
 import pandas as pd
 import numpy as np
 from tensorflow_functions import *
-IMAGES_PER_CLASS = 50000
-NCSVS = 200
+IMAGES_PER_CLASS = None
+NCSVS = 100
 
-def f2cat(fname: str) -> str:
+def f2cat(fname):
     return fname.split('.')[0]
 
 class Simplified():
