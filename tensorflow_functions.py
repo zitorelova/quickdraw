@@ -20,7 +20,7 @@ tf.set_random_seed(seed=1987)
 size = 128
 batchsize = 512
 
-def f2cat(filename: str) -> str:
+def f2cat(filename):
     return filename.split('.')[0]
 
 def list_all_categories():
