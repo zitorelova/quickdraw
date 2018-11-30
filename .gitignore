@@ -2,3 +2,7 @@ data/
 models/
 repo/
 fastai
+*.csv
+train_simplified
+*.h5
+shuffled_csv
