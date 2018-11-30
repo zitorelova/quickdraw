@@ -205,13 +205,13 @@ for i in range(10):
     end = min((i+1)*11220, 112199)
     subtest= test.iloc[i*11220:end].copy().reset_index(drop=True)
     x_test = df_to_image_array_xd(subtest, SIZE)
-    x_test_flip = np.flip(x_test, 2)
+    x_test_flip = [np.flip(x_test[0], axis=2), x_test[1]]
     ensembled = np.zeros((subtest.shape[0], NCATS))
     for m in weights_to_use:
-        print("Predicting on {} model".format(m.split('/')[-1].split('.')[0])
+        print("Predicting on {} model".format(m.split('/')[-1].split('.')[0]))
         model.load_weights(m)
         test_predictions1 = model.predict(x_test, batch_size=128, verbose=1)
-        test_predictions2 = model.predict(x_test_flip, bath_size=128, verbose=1)
+        test_predictions2 = model.predict(x_test_flip, batch_size=128, verbose=1)
 
         final_predictions = np.average([test_predictions1, test_predictions2], axis=0, weights=[0.6,0.4]) / len(weights_to_use)
 
