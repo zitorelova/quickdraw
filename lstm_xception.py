@@ -34,9 +34,9 @@ tf.set_random_seed(seed=1987)
 # Hyperparams
 
 STEPS = 1000
-EPOCHS = 10
+EPOCHS = 5
 SIZE = 96
-BATCHSIZE = 256
+BATCHSIZE = 280
 
 def f2cat(filename):
     return filename.split('.')[0]
@@ -133,7 +133,7 @@ x = Dense(NCATS, activation='softmax')(x)
 model = Model(inputs=[cnn_in, lstm_in], outputs=x)
 model.load_weights('./models/lstm_xception_run1.h5')
 model.compile(optimizer=SGD(lr=0.0008), loss='categorical_crossentropy',
-             metrics=[categorical_crossentropy, categorical_accuracy, top_3_accuracy, mean_ap_3])
+             metrics=[categorical_crossentropy, categorical_accuracy, top_3_accuracy])
 
 def _stack_it(raw_strokes):
     """preprocess the string and make 
@@ -198,10 +198,10 @@ train_datagen = image_generator_xd(size=SIZE, batchsize=BATCHSIZE, ks=range(NCSV
 val_datagen = image_generator_xd(size=SIZE, batchsize=BATCHSIZE, ks=range(NCSVS - 1, NCSVS))
 
 callbacks = [
-    OneCycleLR(num_samples=BATCHSIZE*STEPS, num_epochs=10, batch_size=BATCHSIZE, max_lr=0.0008, end_percentage=0.125, minimum_momentum=0.6),
+    OneCycleLR(num_samples=BATCHSIZE*STEPS, num_epochs=EPOCHS, batch_size=BATCHSIZE, max_lr=0.0008, end_percentage=0.125, minimum_momentum=0.6),
 #    ReduceLROnPlateau(monitor='val_categorical_accuracy', factor=0.5, patience=3,
 #                      min_delta=0.00005, mode='max', cooldown=3, verbose=1),
-    ModelCheckpoint("./models/lstm_xception_run2.h5",monitor='val_mean_ap_3', 
+    ModelCheckpoint("./models/lstm_xception_run2.h5",monitor='val_top_3_accuracy', 
                                    mode = 'max', save_best_only=True, verbose=1)
 ]
 
