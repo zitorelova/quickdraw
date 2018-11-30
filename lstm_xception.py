@@ -34,7 +34,7 @@ tf.set_random_seed(seed=1987)
 # Hyperparams
 
 STEPS = 1000
-EPOCHS = 5
+EPOCHS = 15
 SIZE = 96
 BATCHSIZE = 280
 
@@ -194,8 +194,8 @@ def df_to_image_array_xd(df, size, lw=3, time_color=True):
     x2 = np.stack(df['drawing'], 0)
     return [x,x2]
 
-train_datagen = image_generator_xd(size=SIZE, batchsize=BATCHSIZE, ks=range(NCSVS - 1))
-val_datagen = image_generator_xd(size=SIZE, batchsize=BATCHSIZE, ks=range(NCSVS - 1, NCSVS))
+train_datagen = image_generator_xd(size=SIZE, batchsize=BATCHSIZE, ks=range(NCSVS - 2))
+val_datagen = image_generator_xd(size=SIZE, batchsize=BATCHSIZE, ks=range(NCSVS - 2, NCSVS))
 
 callbacks = [
     OneCycleLR(num_samples=BATCHSIZE*STEPS, num_epochs=EPOCHS, batch_size=BATCHSIZE, max_lr=0.0008, end_percentage=0.125, minimum_momentum=0.6),
@@ -236,10 +236,14 @@ for i in range(10):
     end = min((i+1)*11220, 112199)
     subtest= test.iloc[i*11220:end].copy().reset_index(drop=True)
     x_test = df_to_image_array_xd(subtest, SIZE)
+    x_test_flip = np.flip(x_test, 2)
 
-    test_predictions = model.predict(x_test, batch_size=128, verbose=1)
+    test_predictions1 = model.predict(x_test, batch_size=128, verbose=1)
+    test_predictions2 = model.predict(x_test_flip, bath_size=128, verbose=1)
 
-    top3 = preds2catids(test_predictions)
+    final_predictions = np.average([test_predictions1, test_predictions2], axis=0, weights=[0.55,0.45])
+
+    top3 = preds2catids(final_predictions)
     cats = list_all_categories()
     id2cat = {k: cat.replace(' ', '_') for k, cat in enumerate(cats)}
     top3cats = top3.replace(id2cat)
