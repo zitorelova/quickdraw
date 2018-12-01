@@ -33,10 +33,10 @@ tf.set_random_seed(seed=42)
 
 # Hyperparams
 NUM_SAMPLES = 49707579
-STEPS = NUM_SAMPLES / EPOCHS // BATCHSIZE
 EPOCHS = 100
 SIZE = 96
-BATCHSIZE = 280
+BATCHSIZE = 330
+STEPS = NUM_SAMPLES / EPOCHS // BATCHSIZE
 
 def f2cat(filename):
     return filename.split('.')[0]
@@ -131,7 +131,7 @@ x = concatenate([y, y2])
 x = Dropout(0.3)(x)
 x = Dense(NCATS, activation='softmax')(x)
 model = Model(inputs=[cnn_in, lstm_in], outputs=x)
-model.load_weights('./models/lstm_xception_run2.h5')
+#model.load_weights('./models/lstm_xception_run2.h5')
 model.compile(optimizer=Adam(lr=0.008), loss='categorical_crossentropy',
              metrics=[categorical_crossentropy, categorical_accuracy, top_3_accuracy])
 
