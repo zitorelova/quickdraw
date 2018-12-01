@@ -194,8 +194,8 @@ def df_to_image_array_xd(df, size, lw=3, time_color=True):
     x2 = np.stack(df['drawing'], 0)
     return [x,x2]
 
-train_datagen = image_generator_xd(size=SIZE, batchsize=BATCHSIZE, ks=range(NCSVS - 2))
-val_datagen = image_generator_xd(size=SIZE, batchsize=BATCHSIZE, ks=range(NCSVS - 2, NCSVS))
+train_datagen = image_generator_xd(size=SIZE, batchsize=BATCHSIZE, ks=range(NCSVS - 1))
+val_datagen = image_generator_xd(size=SIZE, batchsize=BATCHSIZE, ks=range(NCSVS - 1, NCSVS))
 
 callbacks = [
 #    OneCycleLR(num_samples=BATCHSIZE*STEPS, num_epochs=EPOCHS, batch_size=BATCHSIZE, max_lr=0.0008, end_percentage=0.125, minimum_momentum=0.6),
