@@ -199,16 +199,16 @@ val_datagen = image_generator_xd(size=SIZE, batchsize=BATCHSIZE, ks=range(NCSVS 
 
 callbacks = [
 #    OneCycleLR(num_samples=BATCHSIZE*STEPS, num_epochs=EPOCHS, batch_size=BATCHSIZE, max_lr=0.0008, end_percentage=0.125, minimum_momentum=0.6),
-    ReduceLROnPlateau(monitor='val_categorical_accuracy', factor=0.5, patience=3,
+    ReduceLROnPlateau(monitor='val_top_3_accuracy', factor=0.5, patience=3,
                       min_delta=0.00008, mode='max', cooldown=3, verbose=1),
     ModelCheckpoint("./models/lstm_xception_full1.h5",monitor='val_top_3_accuracy', 
-                                   mode = 'max', save_best_only=True, verbose=1)
+                                   mode='max', save_best_only=True, verbose=1)
 ]
 
 hists = []
 hist = model.fit_generator(
     train_datagen, steps_per_epoch=STEPS, epochs=EPOCHS, verbose=1,
-    validation_data=val_datagen, validation_steps = 300,
+    validation_data=val_datagen, validation_steps = 500,
     callbacks = callbacks
 )
 hists.append(hist)
@@ -223,7 +223,7 @@ for i in range(10):
     y_valid = keras.utils.to_categorical(valid_df.y, num_classes=NCATS)
     print(x_valid.shape, y_valid.shape)
     print('Validation array memory {:.2f} GB'.format(x_valid.nbytes / 1024.**3 ))
-    valid_predictions = model.predict([x_valid, x2], batch_size=128, verbose=1)
+    valid_predictions = model.predict([x_valid, x2], batch_size=256, verbose=1)
     map3 = mapk(valid_df[['y']].values, preds2catids(valid_predictions).values)
 
     print('Map3: {:.3f}'.format(map3))
@@ -236,14 +236,14 @@ for i in range(10):
     end = min((i+1)*11220, 112199)
     subtest= test.iloc[i*11220:end].copy().reset_index(drop=True)
     x_test = df_to_image_array_xd(subtest, SIZE)
-    x_test_flip = np.flip(x_test, 2)
+#    x_test_flip = np.flip(x_test, 2)
 
-    test_predictions1 = model.predict(x_test, batch_size=128, verbose=1)
-    test_predictions2 = model.predict(x_test_flip, bath_size=128, verbose=1)
+    test_predictions1 = model.predict(x_test, batch_size=256, verbose=1)
+#    test_predictions2 = model.predict(x_test_flip, bath_size=128, verbose=1)
 
-    final_predictions = np.average([test_predictions1, test_predictions2], axis=0, weights=[0.55,0.45])
+#    final_predictions = np.average([test_predictions1, test_predictions2], axis=0, weights=[0.55,0.45])
 
-    top3 = preds2catids(final_predictions)
+    top3 = preds2catids(test_predictions1)
     cats = list_all_categories()
     id2cat = {k: cat.replace(' ', '_') for k, cat in enumerate(cats)}
     top3cats = top3.replace(id2cat)
