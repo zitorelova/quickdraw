@@ -29,15 +29,15 @@ INPUT_DIR = './'
 BASE_SIZE = 256
 NCSVS = 200
 NCATS = 340
-np.random.seed(seed=1987)
-tf.set_random_seed(seed=1987)
+np.random.seed(seed=42)
+tf.set_random_seed(seed=42)
 
 # Hyperparams
 
 STEPS = 1000
 EPOCHS = 15
 SIZE = 96
-BATCHSIZE = 280
+BATCHSIZE = 330
 
 def f2cat(filename):
     return filename.split('.')[0]
@@ -199,7 +199,7 @@ print("Making final predictions on the test set")
 
 test = pd.read_csv(os.path.join(INPUT_DIR, 'test_simplified.csv'))
 
-weights_to_use = ['./models/lstm_xception_run1.h5', './models/lstm_xception_run2.h5']
+weights_to_use = ['./models/lstm_xception_full1.h5']
 
 for i in range(10):
     end = min((i+1)*11220, 112199)
@@ -213,7 +213,7 @@ for i in range(10):
         test_predictions1 = model.predict(x_test, batch_size=128, verbose=1)
         test_predictions2 = model.predict(x_test_flip, batch_size=128, verbose=1)
 
-        final_predictions = np.average([test_predictions1, test_predictions2], axis=0, weights=[0.6,0.4]) / len(weights_to_use)
+        final_predictions = np.average([test_predictions1, test_predictions2], axis=0, weights=[0.8,0.2]) / len(weights_to_use)
 
         ensembled += final_predictions
     
