@@ -205,20 +205,20 @@ for i in range(10):
     end = min((i+1)*11220, 112199)
     subtest= test.iloc[i*11220:end].copy().reset_index(drop=True)
     x_test = df_to_image_array_xd(subtest, SIZE)
-    x_test_flip = [np.flip(x_test[0], axis=2), x_test[1]]
-    ensembled = np.zeros((subtest.shape[0], NCATS))
+#    x_test_flip = [np.flip(x_test[0], axis=2), x_test[1]]
+#    ensembled = np.zeros((subtest.shape[0], NCATS))
     for m in weights_to_use:
         print("Predicting on {} model".format(m.split('/')[-1].split('.')[0]))
         model.load_weights(m)
         test_predictions1 = model.predict(x_test, batch_size=256, verbose=1)
-        test_predictions2 = model.predict(x_test_flip, batch_size=256, verbose=1)
+#        test_predictions2 = model.predict(x_test_flip, batch_size=256, verbose=1)
 
-        final_predictions = np.average([test_predictions1, test_predictions2], axis=0, weights=[0.8,0.2]) / len(weights_to_use)
+#        final_predictions = np.average([test_predictions1, test_predictions2], axis=0, weights=[0.8,0.2]) / len(weights_to_use)
 
-        ensembled += final_predictions
+#        ensembled += final_predictions
     
 
-    top3 = preds2catids(ensembled)
+    top3 = preds2catids(test_predictions1)
     cats = list_all_categories()
     id2cat = {k: cat.replace(' ', '_') for k, cat in enumerate(cats)}
     top3cats = top3.replace(id2cat)
@@ -229,6 +229,6 @@ for i in range(10):
     else: 
         submission = submission.append(subtest[['key_id', 'word']], ignore_index=True)
 
-submission.to_csv('./subs/lstm_xception_ensemble_full1.csv', index=False)
+submission.to_csv('./subs/lstm_xception_ensemble_full1_no_tta.csv', index=False)
 print('Finished in {} minutes'.format((dt.datetime.now() - start).seconds / 60))
 
