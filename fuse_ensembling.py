@@ -133,8 +133,8 @@ x = concatenate([y, y2])
 x = Dropout(0.3)(x)
 x = Dense(NCATS, activation='softmax')(x)
 model = Model(inputs=[cnn_in, lstm_in], outputs=x)
-model.compile(optimizer=SGD(lr=0.0008), loss='categorical_crossentropy',
-             metrics=[categorical_crossentropy, categorical_accuracy, top_3_accuracy])
+#model.compile(optimizer=SGD(lr=0.0008), loss='categorical_crossentropy',
+#             metrics=[categorical_crossentropy, categorical_accuracy, top_3_accuracy])
 
 def _stack_it(raw_strokes):
     """preprocess the string and make 
@@ -210,8 +210,8 @@ for i in range(10):
     for m in weights_to_use:
         print("Predicting on {} model".format(m.split('/')[-1].split('.')[0]))
         model.load_weights(m)
-        test_predictions1 = model.predict(x_test, batch_size=128, verbose=1)
-        test_predictions2 = model.predict(x_test_flip, batch_size=128, verbose=1)
+        test_predictions1 = model.predict(x_test, batch_size=256, verbose=1)
+        test_predictions2 = model.predict(x_test_flip, batch_size=256, verbose=1)
 
         final_predictions = np.average([test_predictions1, test_predictions2], axis=0, weights=[0.8,0.2]) / len(weights_to_use)
 
@@ -224,12 +224,11 @@ for i in range(10):
     top3cats = top3.replace(id2cat)
     subtest['word'] = top3cats['a'] + ' ' + top3cats['b'] + ' ' + top3cats['c']
     subtest.head()
-    if i ==0:
+    if i == 0:
         submission = subtest[['key_id', 'word']]
     else: 
         submission = submission.append(subtest[['key_id', 'word']], ignore_index=True)
 
-submission.to_csv('./subs/lstm_xception_ensemble_1.csv', index=False)
+submission.to_csv('./subs/lstm_xception_ensemble_full1.csv', index=False)
 print('Finished in {} minutes'.format((dt.datetime.now() - start).seconds / 60))
-
 
