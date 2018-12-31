@@ -23,6 +23,9 @@ bs = 1400
 PATH = Path('data')
 NUM_VAL = 50 * 340
 NCATS = 340
+sz = 128 
+bs = 8
+NUM_VAL = 5 * 340
 
 def create_func(path):
     with open(path) as f: j = json.load(f)
@@ -42,8 +45,8 @@ val_idxs = idxs[:NUM_VAL]
 
 item_lists = item_list.split_by_idx(val_idxs)
 
-#label_lists = item_lists.label_from_folder()
-#pd.to_pickle(label_lists.train.y.classes, 'data/classes.pkl')
+label_lists = item_lists.label_from_folder()
+pd.to_pickle(label_lists.train.y.classes, 'data/classes.pkl')
 
 classes = pd.read_pickle('data/classes.pkl')
 
@@ -59,11 +62,22 @@ test_dl = DataLoader(label_lists.test, bs, False, num_workers=8)
 
 data_bunch = ImageDataBunch(train_dl, valid_dl, test_dl)
 
-#pd.to_pickle(data_bunch.batch_stats(), f'data/batch_stats_{sz}.pkl')
+test_items = ItemList.from_folder(PATH/'test', create_func=create_func)
+label_lists.add_test(test)
+
+train_dl = DataLoader(label_lists.train, bs, True, num_workers=8)
+valid_dl = DataLoader(label_lists.valid, 2*bs, False, num_workers=8)
+test_dl = DataLoader(label_lists.test, 2*bs, False, num_workers=8)
+
+data_bunch = ImageDataBunch(train_dl, valid_dl, test_dl)
+
+pd.to_pickle(data_bunch.batch_stats(), f'data/batch_stats_{sz}.pkl')
+>>>>>>> Stashed changes
 batch_stats = pd.read_pickle(f'data/batch_stats_{sz}.pkl')
 data_bunch.normalize(batch_stats)
 
 # Define the network 
+<<<<<<< Updated upstream
 name = f'resnet18-{sz}-run-{run}'
 
 learn = create_cnn(data_bunch, models.resnet18, metrics=[accuracy, map3])
@@ -114,3 +128,11 @@ create_submission(preds, data_bunch.test_dl, name, classes)
 
 print(f'Finished in {round(time() - start, 3) / 60} minutes')
 
+=======
+name = f'resnet34-{sz}'
+
+learn = create_cnn(data_bunch, models.resnet34, metrics=[accuracy, map3])
+learn.fit_one_cycle(2)
+
+learn.save(f'{name}-stage-1')
+>>>>>>> Stashed changes
