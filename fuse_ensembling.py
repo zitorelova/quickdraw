@@ -29,15 +29,15 @@ INPUT_DIR = './'
 BASE_SIZE = 256
 NCSVS = 200
 NCATS = 340
-np.random.seed(seed=1987)
-tf.set_random_seed(seed=1987)
+np.random.seed(seed=42)
+tf.set_random_seed(seed=42)
 
 # Hyperparams
 
 STEPS = 1000
 EPOCHS = 15
 SIZE = 96
-BATCHSIZE = 280
+BATCHSIZE = 330
 
 def f2cat(filename):
     return filename.split('.')[0]
@@ -133,8 +133,8 @@ x = concatenate([y, y2])
 x = Dropout(0.3)(x)
 x = Dense(NCATS, activation='softmax')(x)
 model = Model(inputs=[cnn_in, lstm_in], outputs=x)
-model.compile(optimizer=SGD(lr=0.0008), loss='categorical_crossentropy',
-             metrics=[categorical_crossentropy, categorical_accuracy, top_3_accuracy])
+#model.compile(optimizer=SGD(lr=0.0008), loss='categorical_crossentropy',
+#             metrics=[categorical_crossentropy, categorical_accuracy, top_3_accuracy])
 
 def _stack_it(raw_strokes):
     """preprocess the string and make 
@@ -199,37 +199,36 @@ print("Making final predictions on the test set")
 
 test = pd.read_csv(os.path.join(INPUT_DIR, 'test_simplified.csv'))
 
-weights_to_use = ['./models/lstm_xception_run1.h5', './models/lstm_xception_run2.h5']
+weights_to_use = ['./models/lstm_xception_full1.h5']
 
 for i in range(10):
     end = min((i+1)*11220, 112199)
     subtest= test.iloc[i*11220:end].copy().reset_index(drop=True)
     x_test = df_to_image_array_xd(subtest, SIZE)
-    x_test_flip = [np.flip(x_test[0], axis=2), x_test[1]]
-    ensembled = np.zeros((subtest.shape[0], NCATS))
+#    x_test_flip = [np.flip(x_test[0], axis=2), x_test[1]]
+#    ensembled = np.zeros((subtest.shape[0], NCATS))
     for m in weights_to_use:
         print("Predicting on {} model".format(m.split('/')[-1].split('.')[0]))
         model.load_weights(m)
-        test_predictions1 = model.predict(x_test, batch_size=128, verbose=1)
-        test_predictions2 = model.predict(x_test_flip, batch_size=128, verbose=1)
+        test_predictions1 = model.predict(x_test, batch_size=256, verbose=1)
+#        test_predictions2 = model.predict(x_test_flip, batch_size=256, verbose=1)
 
-        final_predictions = np.average([test_predictions1, test_predictions2], axis=0, weights=[0.6,0.4]) / len(weights_to_use)
+#        final_predictions = np.average([test_predictions1, test_predictions2], axis=0, weights=[0.8,0.2]) / len(weights_to_use)
 
-        ensembled += final_predictions
+#        ensembled += final_predictions
     
 
-    top3 = preds2catids(ensembled)
+    top3 = preds2catids(test_predictions1)
     cats = list_all_categories()
     id2cat = {k: cat.replace(' ', '_') for k, cat in enumerate(cats)}
     top3cats = top3.replace(id2cat)
     subtest['word'] = top3cats['a'] + ' ' + top3cats['b'] + ' ' + top3cats['c']
     subtest.head()
-    if i ==0:
+    if i == 0:
         submission = subtest[['key_id', 'word']]
     else: 
         submission = submission.append(subtest[['key_id', 'word']], ignore_index=True)
 
-submission.to_csv('./subs/lstm_xception_ensemble_1.csv', index=False)
+submission.to_csv('./subs/lstm_xception_ensemble_full1_no_tta.csv', index=False)
 print('Finished in {} minutes'.format((dt.datetime.now() - start).seconds / 60))
-
 
